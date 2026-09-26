@@ -55,6 +55,9 @@ async def create_order(request: Request, order_req: OrderCreateRequest, db: Sess
         correlation_id=correlation_id
     )
     
+    order.status = "PAYMENT_PENDING"
+    db.commit()
+    
     api_items = [
         APIOrderItem(product_id=i.product_id, quantity=i.quantity, price=i.price)
         for i in order.items

@@ -2,13 +2,12 @@ import json
 import threading
 from confluent_kafka import Consumer, KafkaError
 from ..core.config import settings
-from ..core.logger import get_logger
-from ..services.inventory import reserve_inventory
+from ..services.state_machine import handle_payment_event, handle_inventory_event
+import logging
 
-logger = get_logger(__name__)
-ORDER_EVENTS_TOPIC = "orders.events"
+logger = logging.getLogger(__name__)
 
-class InventoryEventConsumer(threading.Thread):
+class OrderEventConsumer(threading.Thread):
     def __init__(self):
         super().__init__()
         self.daemon = True
@@ -21,8 +20,8 @@ class InventoryEventConsumer(threading.Thread):
         
     def run(self):
         self._running = True
-        self._consumer.subscribe([ORDER_EVENTS_TOPIC])
-        logger.info(f"Subscribed to {ORDER_EVENTS_TOPIC}")
+        self._consumer.subscribe(["payments.events", "inventory.events"])
+        logger.info("OrderEventConsumer subscribed to payments.events and inventory.events")
         
         try:
             while self._running:
@@ -36,15 +35,18 @@ class InventoryEventConsumer(threading.Thread):
                 
                 try:
                     value = json.loads(msg.value().decode('utf-8'))
-                    if value.get("event_type") == "InventoryReservationRequested":
-                        order_id = value.get("payload", {}).get("order_id")
-                        if order_id:
-                            reserve_inventory(order_id, value.get("correlation_id"))
+                    event_type = value.get("event_type")
+                    payload = value.get("payload", {})
+                    
+                    if event_type in ["PaymentCompleted", "PaymentFailed"]:
+                        handle_payment_event(payload, event_type)
+                    elif event_type in ["InventoryReserved", "InventoryReservationFailed"]:
+                        handle_inventory_event(payload, event_type)
                 except Exception as e:
-                    logger.error(f"Error processing message: {e}")
+                    logger.error(f"Error processing message in OrderEventConsumer: {e}")
         finally:
             self._consumer.close()
-            logger.info("Inventory consumer closed.")
+            logger.info("OrderEventConsumer closed.")
 
     def stop(self):
         self._running = False

@@ -21,3 +21,17 @@ def publish_order_created(order_id: str, customer_id: str, total_amount: float, 
         key=order_id,
         value=envelope.model_dump()
     )
+
+def publish_inventory_reservation_requested(order_id: str, correlation_id: str | None = None) -> None:
+    # Just passing order_id in the payload
+    envelope = EventEnvelope(
+        event_type="InventoryReservationRequested",
+        correlation_id=correlation_id,
+        payload={"order_id": order_id}
+    )
+    
+    publish_event(
+        topic=ORDER_EVENTS_TOPIC,
+        key=order_id,
+        value=envelope.model_dump()
+    )
