@@ -1,0 +1,24 @@
+
+replicaCount: 1
+
+image:
+  repository: cloud-event-platform
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+kafka:
+  bootstrapServers: "kafka:29092"
+
+postgres:
+  url: "postgresql+psycopg2://myuser:mypassword@postgres:5432/cep"
+
+redis:
+  url: "redis://redis:6379/0"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

@@ -31,11 +31,11 @@ Cloud Event Processing Platform is a production-oriented project demonstrating h
 - Poetry (or pip)
 
 ### Startup Procedure
-To start the local infrastructure (PostgreSQL, Redis, Kafka, LocalStack):
+To build and start the complete local application including infrastructure (PostgreSQL, Redis, Kafka, LocalStack) and all microservices (Order, Payment, Inventory):
 ```bash
-docker compose up -d
+docker compose up --build -d
 ```
-Check if all services are healthy:
+Check if all services and infrastructure containers are healthy:
 ```bash
 docker compose ps
 ```
