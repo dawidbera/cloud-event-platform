@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     
     # Kafka
     kafka_bootstrap_servers: str = "localhost:9092"
+    consumer_group_id: str = "order-service-group"
     
     # Redis
     redis_url: str = "redis://localhost:6379/0"
