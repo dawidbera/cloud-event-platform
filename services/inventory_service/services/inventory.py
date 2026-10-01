@@ -6,6 +6,7 @@ from ..events.publisher import publish_inventory_result
 logger = get_logger(__name__)
 
 def reserve_inventory(order_id: str, correlation_id: str | None = None) -> None:
+    """Simulates an inventory check and reservation, randomly failing 5% of requests to mimic out-of-stock scenarios, then publishes a result event."""
     logger.info(f"[{correlation_id}] Checking inventory for order {order_id}")
     time.sleep(random.uniform(0.1, 0.4))
     

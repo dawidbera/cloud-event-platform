@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from ..core.database import Base
 
 class Order(Base):
+    """SQLAlchemy ORM model representing the core Order entity, tracking customer details, total cost, and fulfillment lifecycle status."""
     __tablename__ = "orders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
@@ -18,6 +19,7 @@ class Order(Base):
 
 
 class OrderItem(Base):
+    """SQLAlchemy ORM model representing individual products purchased within a specific order."""
     __tablename__ = "order_items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)

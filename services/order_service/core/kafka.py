@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 _producer = None
 
 def get_producer() -> Producer:
+    """Initializes and returns a singleton Kafka Producer instance configured with the application's settings."""
     global _producer
     if _producer is None:
         producer_config = {
@@ -19,12 +20,14 @@ def get_producer() -> Producer:
     return _producer
 
 def delivery_report(err, msg):
+    """Callback function triggered upon successful or failed delivery of a message to the Kafka broker."""
     if err is not None:
         logger.error(f"Message delivery failed: {err}")
     else:
         logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 def publish_event(topic: str, key: str, value: dict):
+    """Serializes and sends a domain event to a specified Kafka topic, invoking the delivery report callback."""
     p = get_producer()
     try:
         p.produce(

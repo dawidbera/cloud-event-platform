@@ -4,7 +4,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 class IdempotencyManager:
+    """Manages message idempotency using Redis to track processing states, preventing duplicate event handling."""
     def __init__(self, redis_url: str):
+        """Initializes the idempotency manager by creating a Redis connection and defining the state time-to-live."""
         self.client = redis.from_url(redis_url)
         self.ttl = 86400 * 7 # 7 days TTL
 
@@ -23,9 +25,11 @@ class IdempotencyManager:
         return False
 
     def mark_completed(self, event_id: str):
+        """Records the successful processing of an event in Redis to prevent future reprocessing."""
         key = f"idempotency:event:{event_id}"
         self.client.set(key, "COMPLETED", ex=self.ttl)
 
     def mark_failed(self, event_id: str):
+        """Removes an event's processing lock in Redis so it can be safely retried."""
         key = f"idempotency:event:{event_id}"
         self.client.delete(key)

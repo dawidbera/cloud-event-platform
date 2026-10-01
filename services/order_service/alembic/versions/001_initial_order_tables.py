@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    """Applies the database migration to create the initial 'orders' and 'order_items' tables."""
     op.create_table('orders',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('customer_id', sa.String(), nullable=False),
@@ -42,6 +43,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Reverts the database migration by dropping the 'orders' and 'order_items' tables."""
     op.drop_index(op.f('ix_order_items_id'), table_name='order_items')
     op.drop_table('order_items')
     op.drop_index(op.f('ix_orders_id'), table_name='orders')

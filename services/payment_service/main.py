@@ -12,6 +12,7 @@ consumer_thread = PaymentEventConsumer()
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
+    """FastAPI lifespan context that spins up the PaymentEventConsumer thread upon application startup and tears it down on exit."""
     # Startup
     consumer_thread.start()
     yield
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI):
     consumer_thread.join(timeout=5.0)
 
 def create_app() -> FastAPI:
+    """Bootstraps the FastAPI instance, mounts routes, and instruments the application with optional metrics and tracing."""
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
@@ -28,6 +30,21 @@ def create_app() -> FastAPI:
     )
     
     app.include_router(api_router)
+    
+    # Prometheus Metrics
+    try:
+        from prometheus_fastapi_instrumentator import Instrumentator
+        Instrumentator().instrument(app).expose(app)
+    except ImportError:
+        pass
+        
+    # OpenTelemetry Tracing
+    try:
+        from shared.observability.tracing import setup_tracing
+        setup_tracing(app, "payment_service")
+    except Exception as e:
+        pass
+        
     return app
 
 app = create_app()

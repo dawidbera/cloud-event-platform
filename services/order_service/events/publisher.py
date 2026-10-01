@@ -4,6 +4,7 @@ from .schemas import EventEnvelope, OrderCreatedPayload
 ORDER_EVENTS_TOPIC = "orders.events"
 
 def publish_order_created(order_id: str, customer_id: str, total_amount: float, correlation_id: str | None = None) -> None:
+    """Builds an OrderCreated event envelope and publishes it to the orders.events topic to kick off downstream processes like payment."""
     payload = OrderCreatedPayload(
         order_id=order_id,
         customer_id=customer_id,
@@ -23,6 +24,7 @@ def publish_order_created(order_id: str, customer_id: str, total_amount: float, 
     )
 
 def publish_inventory_reservation_requested(order_id: str, correlation_id: str | None = None) -> None:
+    """Dispatches an InventoryReservationRequested event on the orders topic to secure stock for a newly created order."""
     # Just passing order_id in the payload
     envelope = EventEnvelope(
         event_type="InventoryReservationRequested",

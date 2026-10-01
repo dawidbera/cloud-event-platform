@@ -6,6 +6,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def init_topics(bootstrap_servers: str):
+    """Connects to a Kafka cluster to programmatically define and create standard topics and their associated Dead Letter Queues."""
     admin = AdminClient({'bootstrap.servers': bootstrap_servers})
     
     # Define topics based on conventions (e.g. 3 partitions, RF 1 for local)

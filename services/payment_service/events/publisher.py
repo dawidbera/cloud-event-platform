@@ -11,6 +11,7 @@ PAYMENTS_EVENTS_TOPIC = "payments.events"
 _producer = None
 
 def get_producer() -> Producer:
+    """Lazily initializes and returns a Kafka Producer instance with acks=all to ensure durable message delivery."""
     global _producer
     if _producer is None:
         producer_config = {
@@ -22,12 +23,14 @@ def get_producer() -> Producer:
     return _producer
 
 def delivery_report(err, msg):
+    """Callback triggered by Kafka to log whether a message was successfully delivered or if an error occurred."""
     if err is not None:
         logger.error(f"Message delivery failed: {err}")
     else:
         logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 def publish_payment_result(order_id: str, payment_id: str, status: str, reason: str | None = None, correlation_id: str | None = None) -> None:
+    """Constructs a PaymentCompleted or PaymentFailed event envelope and publishes it to the payments.events topic for downstream consumers."""
     payload = PaymentResultPayload(
         order_id=order_id,
         payment_id=payment_id,

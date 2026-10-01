@@ -9,11 +9,13 @@ from .producer import EventProducer
 logger = logging.getLogger(__name__)
 
 class EventConsumer(threading.Thread):
+    """A thread-based Kafka consumer that polls messages from topics and dispatches them to a handler, with optional idempotency and DLQ support."""
     def __init__(self, bootstrap_servers: str, group_id: str, topics: list[str],
                  handler: Callable[[dict], None], 
                  dlq_topic: str | None = None,
                  idempotency_manager: IdempotencyManager | None = None,
                  producer: EventProducer | None = None):
+        """Initializes the Kafka consumer with subscriptions, a message handler, and optional configurations for a Dead Letter Queue and idempotency."""
         super().__init__()
         self.daemon = True
         self._running = False
@@ -31,6 +33,7 @@ class EventConsumer(threading.Thread):
         })
 
     def run(self):
+        """Main consumer loop that continuously polls Kafka for messages and triggers processing while handling connection errors."""
         self._running = True
         self.consumer.subscribe(self.topics)
         logger.info(f"Subscribed to {self.topics}")
@@ -50,9 +53,11 @@ class EventConsumer(threading.Thread):
             logger.info("Consumer closed.")
 
     def stop(self):
+        """Gracefully signals the consumer thread to stop polling and shut down."""
         self._running = False
 
     def _process_message(self, msg):
+        """Decodes a consumed message, performs idempotency checks, executes the handler, and manages error routing to a DLQ."""
         event_id = None
         try:
             value = json.loads(msg.value().decode('utf-8'))

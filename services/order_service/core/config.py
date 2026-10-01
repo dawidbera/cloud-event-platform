@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    """Pydantic BaseSettings class that loads application configuration from environment variables, including database and Kafka connection strings."""
     app_name: str = "Order Service"
     app_version: str = "0.1.0"
     debug: bool = False

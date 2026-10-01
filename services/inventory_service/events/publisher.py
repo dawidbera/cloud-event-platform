@@ -9,6 +9,7 @@ INVENTORY_EVENTS_TOPIC = "inventory.events"
 _producer = None
 
 def get_producer() -> Producer:
+    """Lazily initializes and returns a singleton instance of the Confluent Kafka Producer."""
     global _producer
     if _producer is None:
         _producer = Producer({
@@ -19,12 +20,14 @@ def get_producer() -> Producer:
     return _producer
 
 def delivery_report(err, msg):
+    """Callback to log delivery success or failure for published inventory events."""
     if err is not None:
         logger.error(f"Message delivery failed: {err}")
     else:
         logger.debug(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 def publish_inventory_result(order_id: str, status: str, reason: str | None = None, correlation_id: str | None = None) -> None:
+    """Publishes a success or failure domain event to the inventory topics detailing the result of a stock reservation attempt."""
     payload = InventoryResultPayload(order_id=order_id, status=status, reason=reason)
     event_type = "InventoryReserved" if status == "SUCCESS" else "InventoryReservationFailed"
     envelope = EventEnvelope(event_type=event_type, correlation_id=correlation_id, payload=payload.model_dump())

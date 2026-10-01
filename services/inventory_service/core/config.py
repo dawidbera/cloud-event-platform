@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    """Loads and validates all service environment variables and configuration settings."""
     app_name: str = "Inventory Service"
     app_version: str = "0.1.0"
     debug: bool = False

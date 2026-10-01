@@ -12,10 +12,12 @@ router = APIRouter()
 
 @router.get("/health", status_code=status.HTTP_200_OK)
 async def health_check() -> dict[str, str]:
+    """Basic liveness probe endpoint used by Kubernetes to verify the service is running."""
     return {"status": "ok"}
 
 @router.get("/ready", status_code=status.HTTP_200_OK)
 async def readiness_check(db: Session = Depends(get_db)) -> dict[str, str]:
+    """Readiness probe endpoint that verifies active connections to the database and external dependencies."""
     # Check DB connectivity
     from sqlalchemy import text
     db.execute(text("SELECT 1"))
@@ -24,6 +26,7 @@ async def readiness_check(db: Session = Depends(get_db)) -> dict[str, str]:
 
 @router.post("/orders", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
 async def create_order(request: Request, order_req: OrderCreateRequest, db: Session = Depends(get_db)) -> OrderResponse:
+    """Handles the creation of a new order, saving it to the database and publishing an OrderCreated event to Kafka."""
     total_amount = sum(item.price * item.quantity for item in order_req.items)
     
     order = Order(
@@ -73,6 +76,7 @@ async def create_order(request: Request, order_req: OrderCreateRequest, db: Sess
 
 @router.get("/orders/{order_id}", response_model=OrderResponse, status_code=status.HTTP_200_OK)
 async def get_order(order_id: str, db: Session = Depends(get_db)) -> OrderResponse:
+    """Retrieves a specific order by its unique identifier, raising an exception if the order does not exist."""
     try:
         order_uuid = uuid.UUID(order_id)
     except ValueError:
