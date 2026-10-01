@@ -1,0 +1,23 @@
+# CI/CD specific values for testing
+replicaCount: 1
+
+image:
+  tag: "ci-test"
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+postgres:
+  url: "postgresql+psycopg2://ci_user:ci_password@postgres-ci:5432/cep_test"
+
+redis:
+  url: "redis://redis-ci:6379/0"
+
+kafka:
+  bootstrapServers: "kafka-ci:29092"
