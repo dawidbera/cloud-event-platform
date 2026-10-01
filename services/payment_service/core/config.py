@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    """Validates and holds all application settings, pulling values from environment variables or a .env file."""
     app_name: str = "Payment Service"
     app_version: str = "0.1.0"
     debug: bool = False

@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # INVENTORY_RESERVED -> COMPLETED
 
 def update_order_status(order_id: str, new_event: str):
+    """Retrieves an order and applies state transitions based on external domain events, potentially emitting new events in response."""
     with SessionLocal() as db:
         order = db.query(Order).filter(Order.id == order_id).first()
         if not order:
@@ -52,9 +53,11 @@ def update_order_status(order_id: str, new_event: str):
             logger.debug(f"Order {order_id} state unchanged from {current_status} on {new_event}")
 
 def handle_payment_event(payload: dict, event_type: str):
+    """Extracts the order ID from a payment event payload and routes it to the state machine for processing."""
     order_id = payload.get("order_id")
     update_order_status(order_id, event_type)
 
 def handle_inventory_event(payload: dict, event_type: str):
+    """Extracts the order ID from an inventory event payload and routes it to the state machine for processing."""
     order_id = payload.get("order_id")
     update_order_status(order_id, event_type)

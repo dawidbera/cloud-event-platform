@@ -7,6 +7,7 @@ from ..events.publisher import publish_payment_result
 logger = get_logger(__name__)
 
 def process_payment(order_id: str, amount: float, correlation_id: str | None = None) -> None:
+    """Simulates communicating with a payment gateway, artificially failing transactions over 10k or randomly at 10%, then publishes the outcome."""
     logger.info(f"[{correlation_id}] Processing payment for order {order_id} (Amount: {amount})")
     
     # Simulate processing delay
