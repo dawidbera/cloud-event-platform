@@ -1,0 +1,61 @@
+import argparse
+import sys
+import logging
+
+from .commands.audit import audit_command
+from .commands.health import health_command
+from .commands.report import report_command
+from .commands.deploy import deploy_command
+from .commands.rollback import rollback_command
+
+logger = logging.getLogger("kubeops")
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+
+def main():
+    setup_logging()
+    
+    parser = argparse.ArgumentParser(description="kubeops - Kubernetes Operations CLI for Cloud Event Platform")
+    parser.add_argument('--version', action='version', version='%(prog)s 0.1.0')
+    
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    
+    # Audit command
+    audit_parser = subparsers.add_parser("audit", help="Audit Kubernetes resources")
+    audit_parser.set_defaults(func=audit_command)
+    
+    # Health command
+    health_parser = subparsers.add_parser("health", help="Check cluster and application health")
+    health_parser.set_defaults(func=health_command)
+    
+    # Report command
+    report_parser = subparsers.add_parser("report", help="Generate consolidated report")
+    report_parser.set_defaults(func=report_command)
+    
+    # Deploy command
+    deploy_parser = subparsers.add_parser("deploy", help="Deploy applications to Kubernetes")
+    deploy_parser.set_defaults(func=deploy_command)
+    
+    # Rollback command
+    rollback_parser = subparsers.add_parser("rollback", help="Rollback a deployment")
+    rollback_parser.set_defaults(func=rollback_command)
+    
+    args = parser.parse_args()
+    
+    if args.command is None:
+        parser.print_help()
+        sys.exit(1)
+        
+    try:
+        exit_code = args.func(args)
+        sys.exit(exit_code)
+    except Exception as e:
+        logger.error(f"Command execution failed: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

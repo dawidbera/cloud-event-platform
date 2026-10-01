@@ -9,6 +9,9 @@ packages = [
     { include = "shared" }
 ]
 
+[tool.poetry.scripts]
+kubeops = "kubeops.cli:main"
+
 [tool.poetry.dependencies]
 python = "^3.12"
 
