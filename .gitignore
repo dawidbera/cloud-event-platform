@@ -5,3 +5,4 @@
 .terraform/
 .terraform.lock.hcl
 .idea/
+.poetry-venv/
