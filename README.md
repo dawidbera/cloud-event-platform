@@ -1,5 +1,6 @@
 # Cloud Event Processing Platform
 
+[![CI/CD Pipeline](https://github.com/dawidbera/cloud-event-platform/actions/workflows/build.yml/badge.svg)](https://github.com/dawidbera/cloud-event-platform/actions/workflows/build.yml)
 
 A production-oriented platform demonstrating a distributed, event-driven backend built with Python, Apache Kafka, and Kubernetes. The project serves as a showcase for modern Cloud/Backend Engineering practices, including Infrastructure as Code, CI/CD, and custom Kubernetes operations automation.
 
@@ -33,6 +34,68 @@ flowchart TD
    - `Payment Service` processes the payment and publishes `PaymentCompleted` (or `PaymentFailed`).
    - `Inventory Service` reserves items and publishes `InventoryReserved` (or `InventoryReservationFailed`).
 3. **Completion**: The `Order Service` listens for these events, verifies them using Redis for idempotency, and updates the final state in PostgreSQL (`COMPLETED` or `FAILED`).
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant OrderAPI as Order Service
+    participant DB as PostgreSQL
+    participant Kafka as Apache Kafka
+    participant Payment as Payment Service
+    participant Inventory as Inventory Service
+    participant Redis as Redis
+
+    Client->>OrderAPI: POST /orders
+    OrderAPI->>DB: Save Order (status: PENDING)
+    OrderAPI->>Kafka: Publish OrderCreated
+    OrderAPI-->>Client: 202 Accepted (order_id)
+
+    par Payment Processing
+        Kafka-->>Payment: Consume OrderCreated
+        Payment->>Redis: Check Idempotency
+        Payment->>Payment: Process Payment
+        Payment->>Kafka: Publish PaymentCompleted
+    and Inventory Reservation
+        Kafka-->>Inventory: Consume OrderCreated
+        Inventory->>Redis: Check Idempotency
+        Inventory->>Inventory: Reserve Items
+        Inventory->>Kafka: Publish InventoryReserved
+    end
+
+    Kafka-->>OrderAPI: Consume PaymentCompleted & InventoryReserved
+    OrderAPI->>Redis: Check Idempotency
+    OrderAPI->>DB: Update Order (status: COMPLETED)
+```
+
+### Data Model (PostgreSQL)
+
+The primary data store is PostgreSQL, which holds the current state of all orders. Redis is used adjacently as a transient store for idempotency keys.
+
+```mermaid
+erDiagram
+    ORDER {
+        uuid id PK
+        uuid customer_id
+        string status "e.g., PENDING, COMPLETED, FAILED"
+        float total_amount
+        timestamp created_at
+        timestamp updated_at
+    }
+    ORDER_ITEM {
+        uuid id PK
+        uuid order_id FK
+        string product_id
+        int quantity
+        float unit_price
+    }
+    ORDER ||--o{ ORDER_ITEM : "contains"
+```
+
+## API Documentation
+
+The platform provides a fully documented REST API utilizing FastAPI and OpenAPI standards.
+
+![Order Service Swagger UI](docs/images/api-swagger.png)
 
 ---
 
@@ -72,6 +135,9 @@ The Helm chart is located at `cloud-event-platform/deploy/helm/cep`. It dynamica
 
 The project includes a custom Python CLI (`kubeops`) that interfaces directly with the Kubernetes API to automate common operational tasks.
 
+### In Action
+![kubeops CLI verifying cluster health and auditing best practices](docs/images/kubeops-in-action.png)
+
 ### Installation
 ```bash
 poetry install
@@ -110,11 +176,45 @@ terraform apply
 - **Metrics**: Services expose Prometheus-compatible endpoints (`/metrics`), tracking HTTP latencies, processed events (`EVENTS_PROCESSED`), and failure rates (`EVENTS_FAILED`).
 - **Idempotency**: All consumers use a Redis-backed `IdempotencyManager` (TTL-based) to guarantee exactly-once processing effects.
 
+### Metrics & Monitoring
+Real-time monitoring is provided via Prometheus and Grafana, allowing instant visualization of API traffic, event processing rates, and system health.
+
+![Grafana Dashboard](docs/images/grafana-dashboard.png)
+
+### Distributed Tracing Example
+By injecting a `correlation_id`, a single client request can be easily traced across the entire stream of distributed microservices:
+
+**1. Order Service (REST API):**
+```json
+{
+  "timestamp": "2026-10-10T11:24:10.152Z",
+  "level": "INFO",
+  "service": "order-service",
+  "message": "Order CREATED successfully. Publishing OrderCreated event.",
+  "correlation_id": "req-9b8c-4f11-a392",
+  "order_id": "e43b67c2-1a44-48b2",
+  "customer_id": "cust123"
+}
+```
+
+**2. Payment Service (Kafka Consumer):**
+```json
+{
+  "timestamp": "2026-10-10T11:24:10.380Z",
+  "level": "INFO",
+  "service": "payment-service",
+  "message": "Consumed OrderCreated event. Payment APPROVED.",
+  "correlation_id": "req-9b8c-4f11-a392",
+  "event_id": "evt-7711-2290-b11c",
+  "order_id": "e43b67c2-1a44-48b2"
+}
+```
+
 ---
 
 ## CI/CD (GitHub Actions)
 
-The platform features a complete CI/CD pipeline (`.github/workflows/deploy.yml`):
+The platform features a complete CI/CD pipeline (`.github/workflows/build.yml`):
 1. **Validates code** using Ruff, Mypy, and Pytest.
 2. **Builds** the Kubernetes environment using `k3d`.
 3. **Deploys** the Helm chart.
