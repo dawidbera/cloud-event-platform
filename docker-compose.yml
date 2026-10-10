@@ -1,5 +1,4 @@
-version: "3.8"
-
+version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
@@ -9,149 +8,156 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: cep
     ports:
-      - "5432:5432"
+    - 5432:5432
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+    - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U myuser -d cep"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U myuser -d cep
       interval: 5s
       timeout: 5s
       retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: cep-redis
     ports:
-      - "6379:6379"
+    - 6379:6379
     volumes:
-      - redis-data:/data
+    - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test:
+      - CMD
+      - redis-cli
+      - ping
       interval: 5s
       timeout: 5s
       retries: 5
-
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: cep-kafka
     ports:
-      - "9092:9092"
-      - "9093:9093"
+    - 9092:9092
+    - 9093:9093
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,EXTERNAL://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
+      KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_NUM_PARTITIONS: 3
-      CLUSTER_ID: 'cep-cluster-1234567890'
+      CLUSTER_ID: cep-cluster-1234567890
     volumes:
-      - kafka-data:/var/lib/kafka/data
+    - kafka-data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      test:
+      - CMD
+      - kafka-topics
+      - --bootstrap-server
+      - localhost:9092
+      - --list
       interval: 10s
       timeout: 5s
       retries: 5
-
   localstack:
     image: localstack/localstack:3.0.2
     container_name: cep-localstack
     ports:
-      - "4566:4566"
+    - 4566:4566
     environment:
-      - SERVICES=s3,sqs,dynamodb,ssm
-      - DEBUG=1
-      - DOCKER_HOST=unix:///var/run/docker.sock
+    - SERVICES=s3,sqs,dynamodb,ssm
+    - DEBUG=1
+    - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - localstack-data:/var/lib/localstack
-      - "/var/run/docker.sock:/var/run/docker.sock"
-
+    - localstack-data:/var/lib/localstack
+    - /var/run/docker.sock:/var/run/docker.sock
   order-service:
     build:
       context: .
       dockerfile: Dockerfile.order
     container_name: cep-order-service
-    ports:
-      - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://myuser:mypassword@postgres:5432/cep
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - REDIS_URL=redis://redis:6379
+    - DATABASE_URL=postgresql+psycopg2://myuser:mypassword@postgres:5432/cep
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - REDIS_URL=redis://redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8000/health
       interval: 10s
       timeout: 5s
       retries: 3
-
   payment-service:
     build:
       context: .
       dockerfile: Dockerfile.payment
     container_name: cep-payment-service
-    ports:
-      - "8001:8001"
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8001/health
       interval: 10s
       timeout: 5s
       retries: 3
-
   inventory-service:
     build:
       context: .
       dockerfile: Dockerfile.inventory
     container_name: cep-inventory-service
-    ports:
-      - "8002:8002"
     environment:
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     depends_on:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8002/health
       interval: 10s
       timeout: 5s
       retries: 3
-
-volumes:
-  postgres-data:
-  redis-data:
-  kafka-data:
-  localstack-data:
-  prometheus-data:
-
   prometheus:
     image: prom/prometheus:v2.50.1
     container_name: cep-prometheus
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+    - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
-
+    - 9090:9090
   grafana:
     image: grafana/grafana:10.4.0
     container_name: cep-grafana
     ports:
-      - "3000:3000"
+    - 3000:3000
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
-      - prometheus
+    - prometheus
+volumes:
+  postgres-data: null
+  redis-data: null
+  kafka-data: null
+  localstack-data: null
+  prometheus-data: null
